@@ -149,15 +149,13 @@ function ScheduleTable() {
 }
 
 /* ===== Antenna SVG (replaces image) + bigger polar ===== */
-function AntennaImage({ src = "/antenna.png", height = 340 }) {
+function AntennaImage({ src = "/antenna.png" }) {
   return (
     <div
       style={{
-        width: 240,
-        height: height,
-        borderRadius: 12,
-        background: "#0b0b0d",
-        border: "1px solid #1f1f22",
+        width: 280,
+        height: 340,
+        background: "rgba(0, 0,0,0)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
