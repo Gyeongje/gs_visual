@@ -1,5 +1,6 @@
 // src/App.js
 import React, { useEffect, useState } from "react";
+import "./App.css";
 
 /* ===== Utilities ===== */
 const fmtTime = (d = new Date()) =>
@@ -326,21 +327,39 @@ function SpectrumPanel() {
   const x = (i) => P + (i / (N - 1)) * (W - 2 * P);
   const y = (v) => P + (1 - v / 100) * (H - 2 * P);
 
+  const isBursting =
+    globalMode === "burst" ||
+    data.some((s) => s.effectiveMode === "burst" || (s.pending && s.pending.toMode === "burst"));
+
   return (
     <Card style={{ padding: 10 }}>
+      {/* burst이면 배경 펄스 + 스윕 + 상단 라인 */}
+      {isBursting && (
+        <>
+          <div className="emergency-bg" style={{ position: "absolute", inset: 0, zIndex: 0 }} />
+          <div className="emergency-sweep" style={{ zIndex: 0 }} />
+          <div className="emergency-topline" style={{ zIndex: 1 }} />
+        </>
+      )}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <Title>Sensors</Title>
           <Muted>dBFS-like scale (0–100)</Muted>
+          {isBursting && (
+            <span className="badge">
+              <span className="dot" />
+              EMERGENCY
+            </span>
+          )}
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, zIndex: 9999 }}>
           <button
             onClick={triggerBurst}
             style={{
               padding: "6px 10px",
               borderRadius: 8,
-              background: "#111115",
-              color: "#111115",
+              background: "rgba(0, 0, 0, 0)",
+              color: "rgba(0, 0, 0, 0)",
               fontSize: 12,
               fontWeight: 700,
               cursor: "default",
@@ -353,8 +372,8 @@ function SpectrumPanel() {
             style={{
               padding: "6px 10px",
               borderRadius: 8,
-              background: "#111115",
-              color: "#111115",
+              background: "rgba(0, 0, 0, 0)",
+              color: "rgba(0, 0, 0, 0)",
               fontSize: 12,
               fontWeight: 700,
               cursor: "default",
