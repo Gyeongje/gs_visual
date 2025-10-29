@@ -42,7 +42,7 @@ const makeSchedule = () => {
 
   // 각 위성의 시작 시간을 5분, 15분, 25분 ... 간격으로 설정
   return sats.map((s, i) => {
-    const start = new Date(base.getTime() + (5 + i * 10 * (1 + Math.random()) * 60 * 1000)); // 첫 번째 5분, 이후 10분 간격
+    const start = new Date(base.getTime() + (5 + (i + 1) * 10 * (1 + Math.random()) * 60 * 1000)); // 첫 번째 5분, 이후 10분 간격
     const end = new Date(start.getTime() + 8 * (1 + Math.random()) * 60 * 1000); // 8분 후 종료
     return {
       ...s,
