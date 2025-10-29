@@ -253,6 +253,7 @@ function SpectrumPanel() {
     { key: "rad", name: "Radiation", color: "#f97316", base: 20 },
     { key: "humid", name: "Humidity", color: "#10b981", base: 55 },
     { key: "vibe", name: "Vibration", color: "#eab308", base: 15 },
+    { key: "bat", name: "Battery", color: "#ea08aaff", base: 75 },
   ];
   const N = 260;
   const H = 360,
