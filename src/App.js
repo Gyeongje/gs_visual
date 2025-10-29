@@ -19,57 +19,41 @@ function polarToXY(angleDeg, r) {
 }
 
 /* ===== Mock Data ===== */
-const scheduleSeed = [
-  {
-    sat: "TERRA",
-    start: "10/13 14:41:02",
-    end: "10/13 14:49:10",
-    elev: 62,
-    status: { setup: 12, tracking: 56, processing: 22, delivery: 10 },
-  },
-  {
-    sat: "METOP-B",
-    start: "10/13 15:05:28",
-    end: "10/13 15:21:53",
-    elev: 58,
-    status: { setup: 8, tracking: 52, processing: 20, delivery: 12 },
-  },
-  {
-    sat: "METOP-C",
-    start: "10/13 15:55:55",
-    end: "10/13 16:09:04",
-    elev: 56,
-    status: { setup: 10, tracking: 48, processing: 18, delivery: 16 },
-  },
-  {
-    sat: "TERRA",
-    start: "10/13 16:17:04",
-    end: "10/13 16:28:43",
-    elev: 52,
-    status: { setup: 9, tracking: 42, processing: 14, delivery: 14 },
-  },
-  {
-    sat: "METOP-B",
-    start: "10/13 16:49:15",
-    end: "10/13 17:00:29",
-    elev: 22,
-    status: { setup: 5, tracking: 35, processing: 12, delivery: 8 },
-  },
-  {
-    sat: "NOAA 20",
-    start: "10/13 17:34:04",
-    end: "10/13 17:35:34",
-    elev: 5,
-    status: { setup: 2, tracking: 8, processing: 3, delivery: 2 },
-  },
-  {
-    sat: "METOP-C",
-    start: "10/13 17:37:10",
-    end: "10/13 17:46:58",
-    elev: 15,
-    status: { setup: 4, tracking: 20, processing: 7, delivery: 5 },
-  },
-];
+// Helper: 시간 포맷 함수 (월/일 시:분:초)
+function fmtShortTime(d) {
+  const pad = (n) => n.toString().padStart(2, "0");
+  return `${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(
+    d.getSeconds()
+  )}`;
+}
+
+// 일정 생성 함수
+const makeSchedule = () => {
+  const base = new Date();
+  const sats = [
+    { sat: "Polytech_Universe-3", elev: 62, status: { setup: 12, tracking: 56, processing: 22, delivery: 10 } },
+    { sat: "Tianqi-28", elev: 58, status: { setup: 8, tracking: 52, processing: 20, delivery: 12 } },
+    { sat: "WREN-1 OWL", elev: 56, status: { setup: 10, tracking: 48, processing: 18, delivery: 16 } },
+    { sat: "TERRA", elev: 52, status: { setup: 9, tracking: 42, processing: 14, delivery: 14 } },
+    { sat: "CSTP-2.11", elev: 22, status: { setup: 5, tracking: 35, processing: 12, delivery: 8 } },
+    { sat: "NOAA 20", elev: 5, status: { setup: 2, tracking: 8, processing: 3, delivery: 2 } },
+    { sat: "RS52SE", elev: 15, status: { setup: 4, tracking: 20, processing: 7, delivery: 5 } },
+  ];
+
+  // 각 위성의 시작 시간을 5분, 15분, 25분 ... 간격으로 설정
+  return sats.map((s, i) => {
+    const start = new Date(base.getTime() + (5 + i * 10 * (1 + Math.random()) * 60 * 1000)); // 첫 번째 5분, 이후 10분 간격
+    const end = new Date(start.getTime() + 8 * (1 + Math.random()) * 60 * 1000); // 8분 후 종료
+    return {
+      ...s,
+      start: fmtShortTime(start),
+      end: fmtShortTime(end),
+    };
+  });
+};
+
+// 동적으로 계산된 scheduleSeed
+const scheduleSeed = makeSchedule();
 
 const polarTargets = [
   { name: "TERRA", az: 30, el: 60 },
@@ -104,7 +88,7 @@ function StatusBar({ parts }) {
 
 function ScheduleTable() {
   return (
-    <Card style={{ padding: 10 }}>
+    <Card style={{ padding: 8 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
         <Title>Schedule</Title>
         <Muted>UTC</Muted>
@@ -112,7 +96,7 @@ function ScheduleTable() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "140px 132px 108px 48px 1fr",
+          gridTemplateColumns: "190px 140px 150px 48px 1fr",
           color: "#cfcfd4",
           fontSize: 12,
           fontWeight: 600,
@@ -131,7 +115,7 @@ function ScheduleTable() {
             key={r.sat + r.start}
             style={{
               display: "grid",
-              gridTemplateColumns: "140px 132px 108px 48px 1fr",
+              gridTemplateColumns: "180px 140px 120px 48px 1fr",
               alignItems: "center",
               columnGap: 8,
             }}
@@ -554,13 +538,10 @@ export default function App() {
           boxSizing: "border-box",
         }}
       >
-        {/* Left: 큰 Pointing + EOS FES */}
-        <div style={{ display: "grid", gridTemplateRows: "minmax(0, 1fr) 210px", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateRows: "80% 20%", gap: 12 }}>
           <SpectrumPanel />
           <EOSFESPanel />
         </div>
-
-        {/* Right: Schedule (40%) + Sensors (60%) */}
         <div style={{ display: "grid", gridTemplateRows: "40% 60%", gap: 12, minWidth: 0 }}>
           <ScheduleTable />
           <PolarPlot height={420} />
