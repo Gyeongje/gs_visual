@@ -56,9 +56,13 @@ const makeSchedule = () => {
 const scheduleSeed = makeSchedule();
 
 const polarTargets = [
-  { name: "TERRA", az: 30, el: 60 },
-  { name: "METOP-B", az: 150, el: 38 },
-  { name: "METOP-C", az: 300, el: 25 },
+  { name: "Polytech_Universe-3", az: 30, el: 60 },
+  { name: "Tianqi-28", az: 150, el: 38 },
+  { name: "WREN-1 OWL", az: 300, el: 10 },
+  { name: "TERRA", az: 200, el: 40 },
+  { name: "CSTP-2.11", az: 100, el: 30 },
+  { name: "NOAA 20", az: 265, el: 15 },
+  { name: "RS52SE", az: 80, el: 25 },
 ];
 
 /* ===== Small UI Bits ===== */
