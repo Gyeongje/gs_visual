@@ -168,28 +168,6 @@ function AntennaImage({ src = "/antenna.png", height = 340 }) {
   );
 }
 
-/*
-function AntennaSVG({ width=190, height=420 }) {
-  return (
-    <svg viewBox="0 0 130 260" width={width} height={height} style={{ background:"#0a0a0b", borderRadius:12 }}>
-      <rect x="58" y="190" width="14" height="48" fill="#7c8593" />
-      <rect x="52" y="238" width="26" height="10" fill="#9aa3ae" />
-      <rect x="63" y="105" width="4" height="85" fill="#9aa3ae" />
-      <circle cx="65" cy="105" r="5" fill="#b4beca" />
-      <rect x="84" y="85" width="16" height="12" rx="2" fill="#ef4444" />
-      <line x1="65" y1="105" x2="92" y2="91" stroke="#ef4444" strokeWidth="2" />
-      <defs>
-        <linearGradient id="g" x1="0" x2="1">
-          <stop offset="0" stopColor="#e6e6e6" />
-          <stop offset="1" stopColor="#cfd3d9" />
-        </linearGradient>
-      </defs>
-      <ellipse cx="40" cy="92" rx="38" ry="46" fill="url(#g)" stroke="#a3a9b3" />
-      <path d="M10 90 C 26 70, 56 70, 78 92" stroke="#cbd5e1" fill="none" />
-    </svg>
-  );
-}*/
-
 function PolarPlot({ height = 420 }) {
   const rings = [0.2, 0.35, 0.5, 0.65, 0.8, 0.95],
     ticks = [0, 45, 90, 135, 180, 225, 270, 315];
@@ -246,50 +224,102 @@ function PolarPlot({ height = 420 }) {
   );
 }
 
-/* ===== Multi-series Sensors (big) ===== */
+/* ===== Multi-series Sensors (big) - UPDATED ===== */
 function SpectrumPanel() {
   const series = [
     { key: "temp", name: "Temperature", color: "#60a5fa", base: 35 },
     { key: "rad", name: "Radiation", color: "#f97316", base: 20 },
     { key: "humid", name: "Humidity", color: "#10b981", base: 55 },
     { key: "vibe", name: "Vibration", color: "#eab308", base: 15 },
-    { key: "bat", name: "Battery", color: "#ea08aaff", base: 75 },
+    { key: "bat", name: "Battery", color: "#ea08aaff", base: 52 },
   ];
   const N = 260;
-  const H = 360,
+  const H = 640,
     W = 820,
     P = 28;
 
-  const [data, setData] = useState(() =>
+  // 전역 모드: 버튼으로 토글
+  const [globalMode, setGlobalMode] = React.useState("normal"); // "normal" | "burst"
+
+  // 지표별 상태: points + 현재 적용 중인 모드(effectiveMode) + 보류된 전환(pending)
+  const [data, setData] = React.useState(() =>
     series.map((s) => ({
       key: s.key,
       points: Array.from({ length: N }, () => s.base + (Math.random() - 0.5) * 4),
-      spike: { power: 0, decay: 0 },
+      effectiveMode: "normal", // 지표에 실제로 적용 중인 모드
+      pending: null, // { toMode: "normal"|"burst", at: timestamp }
     }))
   );
 
-  useEffect(() => {
+  // 수렴 속도
+  const ALPHA_NORMAL = 0.08;
+  const ALPHA_BURST = 0.35;
+
+  // 지연 파라미터 (원하면 조절하세요)
+  const GAP_STEP = 2080; // 인덱스별 계단 증가
+  const GAP_JITTER = 120; // 랜덤 지터
+
+  const gapOn = (idx) => Math.random() * GAP_STEP + Math.floor(Math.random() * GAP_JITTER);
+  const gapOff = (idx) => Math.random() * GAP_STEP + Math.floor(Math.random() * GAP_JITTER);
+
+  const triggerBurst = () => {
+    const now = Date.now();
+    setGlobalMode("burst");
+    setData((prev) =>
+      prev.map((s, idx) => ({
+        ...s,
+        // 이미 burst면 다시 예약하지 않음
+        pending: s.effectiveMode === "burst" ? s.pending : { toMode: "burst", at: now + gapOn(idx) },
+      }))
+    );
+  };
+
+  const backToNormal = () => {
+    const now = Date.now();
+    setGlobalMode("normal");
+    setData((prev) =>
+      prev.map((s, idx) => ({
+        ...s,
+        pending: s.effectiveMode === "normal" ? s.pending : { toMode: "normal", at: now + gapOff(idx) },
+      }))
+    );
+  };
+
+  React.useEffect(() => {
     const id = setInterval(() => {
+      const now = Date.now();
       setData((prev) =>
         prev.map((s, idx) => {
-          const chance = 0.02 + (idx === 1 ? 0.02 : 0);
-          let { power, decay } = s.spike;
-          if (Math.random() < chance && power <= 0) {
-            power = 40 + Math.random() * 40;
-            decay = 0.9 + Math.random() * 0.06;
+          // 시간 도달 시 모드 전환 적용
+          let effectiveMode = s.effectiveMode;
+          let pending = s.pending;
+          if (pending && now >= pending.at) {
+            effectiveMode = pending.toMode;
+            pending = null;
           }
+
           const last = s.points[s.points.length - 1];
-          const noise = (Math.random() - 0.5) * 2.0;
-          const base = last + noise + (s.key === "humid" ? Math.sin(Date.now() / 1500) * 0.15 : 0);
-          const next = Math.max(0, Math.min(100, base + power));
+          const target = effectiveMode === "burst" ? 100 : series[idx].base;
+          const alpha = effectiveMode === "burst" ? ALPHA_BURST : ALPHA_NORMAL;
+
+          const noise = (Math.random() - 0.5) * 1.4;
+          const humWave = s.key === "humid" ? Math.sin(Date.now() / 1500) * 0.18 : 0;
+
+          let next = last + alpha * (target - last) + noise + humWave;
+          next = Math.max(0, Math.min(100, next));
+
           const nextArr = s.points.slice(1);
           nextArr.push(next);
-          power *= decay;
-          if (power < 1) power = 0;
-          return { ...s, points: nextArr, spike: { power, decay } };
+
+          return {
+            ...s,
+            points: nextArr,
+            effectiveMode,
+            pending,
+          };
         })
       );
-    }, 60); // 빠른 업데이트
+    }, 60);
     return () => clearInterval(id);
   }, []);
 
@@ -299,14 +329,51 @@ function SpectrumPanel() {
   return (
     <Card style={{ padding: 10 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-        <Title>Sensors</Title>
-        <Muted>dBFS-like scale (0–100)</Muted>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Title>Sensors</Title>
+          <Muted>dBFS-like scale (0–100)</Muted>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={triggerBurst}
+            style={{
+              padding: "6px 10px",
+              borderRadius: 8,
+              background: "#111115",
+              color: "#111115",
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: "default",
+            }}
+          >
+            Burst Mode
+          </button>
+          <button
+            onClick={backToNormal}
+            style={{
+              padding: "6px 10px",
+              borderRadius: 8,
+              background: "#111115",
+              color: "#111115",
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: "default",
+            }}
+          >
+            Normal Mode
+          </button>
+        </div>
       </div>
+
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 6 }}>
-        {series.map((s) => (
+        {series.map((s, i) => (
           <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#ddd" }}>
             <span style={{ width: 18, height: 4, background: s.color, display: "inline-block", borderRadius: 2 }} />
             {s.name}
+            {/* 지표별 상태 뱃지 (선택) */}
+            {/* <span style={{ fontSize: 11, color: "#a1a1aa" }}>
+              {data[i]?.effectiveMode}{data[i]?.pending ? " (pending)" : ""}
+            </span> */}
           </div>
         ))}
       </div>
