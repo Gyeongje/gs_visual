@@ -246,7 +246,7 @@ function SpectrumPanel() {
   const [data, setData] = React.useState(() =>
     series.map((s) => ({
       key: s.key,
-      points: Array.from({ length: N }, () => s.base + (Math.random() - 0.5) * 4),
+      points: Array.from({ length: N }, () => s.base),
       effectiveMode: "normal", // 지표에 실제로 적용 중인 모드
       pending: null, // { toMode: "normal"|"burst", at: timestamp }
     }))
